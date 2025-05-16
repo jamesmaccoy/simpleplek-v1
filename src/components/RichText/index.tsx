@@ -12,6 +12,7 @@ import {
 } from '@payloadcms/richtext-lexical/react'
 
 import { CodeBlock, CodeBlockProps } from '@/blocks/Code/Component'
+import { StayDurationComponent } from '@/blocks/StayDurationBlock/StayDurationComponent'
 
 import type {
   BannerBlock as BannerBlockProps,
@@ -22,9 +23,16 @@ import { BannerBlock } from '@/blocks/Banner/Component'
 import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { cn } from '@/utilities/cn'
 
+interface StayDurationBlockProps {
+  defaultRate?: number
+  buttonLabel?: string
+  id?: string
+  blockType: 'stayDuration'
+}
+
 type NodeTypes =
   | DefaultNodeTypes
-  | SerializedBlockNode<CTABlockProps | MediaBlockProps | BannerBlockProps | CodeBlockProps>
+  | SerializedBlockNode<CTABlockProps | MediaBlockProps | BannerBlockProps | CodeBlockProps | StayDurationBlockProps>
 
 const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   const { value, relationTo } = linkNode.fields.doc!
@@ -52,6 +60,7 @@ const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) 
     ),
     code: ({ node }) => <CodeBlock className="col-start-2" {...node.fields} />,
     cta: ({ node }) => <CallToActionBlock {...node.fields} />,
+    stayDuration: ({ node }) => <StayDurationComponent {...node.fields} />,
   },
 })
 
@@ -59,13 +68,24 @@ type Props = {
   data: SerializedEditorState
   enableGutter?: boolean
   enableProse?: boolean
+  customNodeSerializers?: Record<string, React.ComponentType<any>>
 } & React.HTMLAttributes<HTMLDivElement>
 
 export default function RichText(props: Props) {
-  const { className, enableProse = true, enableGutter = true, ...rest } = props
+  const { className, enableProse = true, enableGutter = true, customNodeSerializers = {}, ...rest } = props
+  
+  const combinedConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) => ({
+    ...defaultConverters,
+    ...LinkJSXConverter({ internalDocToHref }),
+    ...customNodeSerializers,
+    blocks: {
+      ...jsxConverters({ defaultConverters }).blocks,
+    },
+  })
+
   return (
     <RichTextWithoutBlocks
-      converters={jsxConverters}
+      converters={combinedConverters}
       className={cn(
         {
           'container ': enableGutter,

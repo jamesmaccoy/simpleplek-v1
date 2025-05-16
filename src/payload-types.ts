@@ -182,25 +182,6 @@ export interface Post {
   id: string;
   title: string;
   heroImage?: (string | null) | Media;
-  links?: {
-    link: {
-      type?: ('reference' | 'custom') | null;
-      newTab?: boolean | null;
-      reference?:
-        | ({
-            relationTo: 'pages';
-            value: string | Page;
-          } | null)
-        | ({
-            relationTo: 'posts';
-            value: string | Post;
-          } | null);
-      url?: string | null;
-      label: string;
-      appearance?: ('default' | 'outline') | null;
-    };
-    id?: string | null;
-  }[] | null;
   content: {
     root: {
       type: string;

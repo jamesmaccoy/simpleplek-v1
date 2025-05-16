@@ -12,6 +12,7 @@ import {
 import { Banner } from '../../blocks/Banner/config'
 import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
+import { StayDurationBlock } from '../../blocks/StayDurationBlock'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
 import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
@@ -84,72 +85,6 @@ export const Posts: CollectionConfig<'posts'> = {
               relationTo: 'media',
             },
             {
-              name: 'links',
-              type: 'array',
-              fields: [
-                {
-                  name: 'link',
-                  type: 'group',
-                  fields: [
-                    {
-                      name: 'type',
-                      type: 'select',
-                      options: [
-                        {
-                          label: 'Reference',
-                          value: 'reference',
-                        },
-                        {
-                          label: 'Custom URL',
-                          value: 'custom',
-                        },
-                      ],
-                    },
-                    {
-                      name: 'newTab',
-                      type: 'checkbox',
-                      label: 'Open in new tab',
-                    },
-                    {
-                      name: 'reference',
-                      type: 'relationship',
-                      relationTo: ['pages', 'posts'],
-                      admin: {
-                        condition: (_, { type } = {}) => type === 'reference',
-                      },
-                    },
-                    {
-                      name: 'url',
-                      type: 'text',
-                      admin: {
-                        condition: (_, { type } = {}) => type === 'custom',
-                      },
-                    },
-                    {
-                      name: 'label',
-                      type: 'text',
-                      required: true,
-                    },
-                    {
-                      name: 'appearance',
-                      type: 'select',
-                      defaultValue: 'default',
-                      options: [
-                        {
-                          label: 'Default',
-                          value: 'default',
-                        },
-                        {
-                          label: 'Outline',
-                          value: 'outline',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
               name: 'content',
               type: 'richText',
               editor: lexicalEditor({
@@ -157,7 +92,7 @@ export const Posts: CollectionConfig<'posts'> = {
                   return [
                     ...rootFeatures,
                     HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                    BlocksFeature({ blocks: [Banner, Code, MediaBlock] }),
+                    BlocksFeature({ blocks: [Banner, Code, MediaBlock, StayDurationBlock] }),
                     FixedToolbarFeature(),
                     InlineToolbarFeature(),
                     HorizontalRuleFeature(),

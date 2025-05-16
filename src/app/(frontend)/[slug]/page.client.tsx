@@ -156,7 +156,7 @@ const PageClient: React.FC<PageClientProps> = ({ page, draft, url }) => {
 
           {/* Request Availability Button */}
           <button 
-            className="px-4 py-2 bg-white text-gray-800 rounded-lg border border-gray-300 hover:bg-gray-100"
+            className="primary-btn bg-black text-white rounded-lg px-4 py-2 " 
             onClick={() => {
               // Get rate from the page content
               let rate = '150' // Default rate
