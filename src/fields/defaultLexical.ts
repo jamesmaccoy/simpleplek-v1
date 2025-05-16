@@ -34,24 +34,6 @@ export const defaultLexical: Config['editor'] = lexicalEditor({
               label: ({ t }) => t('fields:enterURL'),
               required: true,
             },
-            {
-              name: 'appearance',
-              type: 'select',
-              defaultValue: 'default',
-              options: [
-                {
-                  label: 'Default',
-                  value: 'default',
-                },
-                {
-                  label: 'Primary Button',
-                  value: 'primary',
-                },
-              ],
-              admin: {
-                description: 'Choose how the link should be rendered.',
-              },
-            },
           ]
         },
       }),

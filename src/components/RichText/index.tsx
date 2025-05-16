@@ -21,7 +21,6 @@ import type {
 import { BannerBlock } from '@/blocks/Banner/Component'
 import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { cn } from '@/utilities/cn'
-import { Button } from '@/components/ui/button'
 
 type NodeTypes =
   | DefaultNodeTypes
@@ -38,29 +37,7 @@ const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
 
 const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) => ({
   ...defaultConverters,
-  ...LinkJSXConverter({
-    internalDocToHref,
-    customLinkComponent: ({ node, children }) => {
-      const appearance = node.fields?.appearance || 'default'
-      const href = node.fields?.url || internalDocToHref({ linkNode: node })
-      
-      if (appearance === 'primary') {
-        return (
-          <Button asChild variant="default" className="mt-4">
-            <a href={href} target={node.fields?.newTab ? '_blank' : undefined}>
-              {children}
-            </a>
-          </Button>
-        )
-      }
-      
-      return (
-        <a href={href} target={node.fields?.newTab ? '_blank' : undefined}>
-          {children}
-        </a>
-      )
-    },
-  }),
+  ...LinkJSXConverter({ internalDocToHref }),
   blocks: {
     banner: ({ node }) => <BannerBlock className="col-start-2 mb-4" {...node.fields} />,
     mediaBlock: ({ node }) => (

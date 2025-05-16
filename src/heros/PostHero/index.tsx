@@ -5,11 +5,12 @@ import type { Post } from '@/payload-types'
 
 import { Media } from '@/components/Media'
 import { formatAuthors } from '@/utilities/formatAuthors'
+import { CMSLink } from '@/components/Link'
 
 export const PostHero: React.FC<{
   post: Post
 }> = ({ post }) => {
-  const { categories, heroImage, populatedAuthors, publishedAt, title } = post
+  const { categories, heroImage, populatedAuthors, title } = post
 
   const hasAuthors =
     populatedAuthors && populatedAuthors.length > 0 && formatAuthors(populatedAuthors) !== ''
@@ -52,14 +53,23 @@ export const PostHero: React.FC<{
                 </div>
               </div>
             )}
-            {publishedAt && (
-              <div className="flex flex-col gap-1">
-                <p className="text-sm">Date Published</p>
-
-                <time dateTime={publishedAt}>{formatDateTime(publishedAt)}</time>
-              </div>
-            )}
           </div>
+
+          {/* Add links section with white styling */}
+          {post.links && Array.isArray(post.links) && post.links.length > 0 && (
+            <ul className="flex gap-4 mt-6">
+              {post.links.map(({ link }, i) => {
+                return (
+                  <li key={i}>
+                    <CMSLink
+                      {...link}
+                      className="border border-white text-white py-2 px-4 rounded hover:bg-white hover:text-neutral-800 transition-colors duration-150 ease-in-out"
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       </div>
       <div className="min-h-[80vh] select-none">

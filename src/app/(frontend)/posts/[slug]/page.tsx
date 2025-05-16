@@ -13,6 +13,9 @@ import type { Post } from '@/payload-types'
 import { PostHero } from '@/heros/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
+// Assuming you've created LexicalButtonRenderer.tsx, e.g., in @/components/lexical/
+// import { LexicalButtonRenderer } from '@/components/lexical/LexicalButtonRenderer';
+// For this example, let's define a placeholder here or assume it's imported.
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 export async function generateStaticParams() {
@@ -46,6 +49,18 @@ export default async function Post({ params: paramsPromise }: Args) {
   const url = '/posts/' + slug
   const post = await queryPostBySlug({ slug })
 
+  // Placeholder for the actual LexicalButtonRenderer component
+  // In a real setup, you would import this from its own file.
+  const LexicalButtonRenderer = ({ node }: any) => (
+    <a href={node.fields?.link?.url || '#'} className="p-2 bg-blue-500 text-white rounded">
+      {node.fields?.text || 'Button'}
+    </a>
+  )
+
+  // This key ('button' in this example) MUST match the 'type' string of your Lexical button node
+  const customNodeSerializers = {
+    button: LexicalButtonRenderer, // Replace 'button' with your actual button node type string
+  }
   if (!post) return <PayloadRedirects url={url} />
 
   return (
@@ -61,7 +76,12 @@ export default async function Post({ params: paramsPromise }: Args) {
 
       <div className="flex flex-col items-center gap-4 pt-8">
         <div className="container">
-          <RichText className="max-w-[48rem] mx-auto" data={post.content} enableGutter={false} />
+          <RichText
+            className="max-w-[48rem] mx-auto"
+            data={post.content}
+            enableGutter={false}
+            customNodeSerializers={customNodeSerializers} // Pass the custom serializers
+          />
           {post.relatedPosts && post.relatedPosts.length > 0 && (
             <RelatedPosts
               className="mt-12 max-w-[52rem] lg:grid lg:grid-cols-subgrid col-start-1 col-span-3 grid-rows-[2fr]"
