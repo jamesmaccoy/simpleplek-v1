@@ -3,148 +3,125 @@
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { CopyIcon, Loader2Icon } from 'lucide-react'
-import React, { FC, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { CopyIcon, CheckIcon } from 'lucide-react'
 
-type Props = {
-  trigger: React.ReactNode
+interface Props {
   bookingId: string
+  trigger: React.ReactNode
+  isPreBooking?: boolean
 }
 
-const InviteUrlDialog: FC<Props> = ({ trigger, bookingId }) => {
-  const [token, setToken] = React.useState<string | null>(null)
-  const [copied, setCopied] = React.useState(false)
-  const [tokenUrl, setTokenUrl] = React.useState<string>('')
-  const [isLoading, setIsLoading] = React.useState(false)
+export default function InviteUrlDialog({ bookingId, trigger, isPreBooking = false }: Props) {
+  const [inviteUrl, setInviteUrl] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  //? Fetch the token from the server.
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        setIsLoading(true)
-        const res = await fetch(`/api/bookings/${bookingId}/token`, {
-          method: 'POST',
-          credentials: 'include',
-        })
-
-        if (!res.ok) {
-          throw new Error('Failed to fetch token')
-        }
-
-        const data = await res.json()
-        setToken(data.token)
-      } catch (error) {
-        console.error('Error fetching token:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchToken()
-  }, [bookingId])
-
-  //? When the tokenUrl is copied, set the copied state to false after a certain duration.
-  useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => {
-        setCopied(false)
-      }, 2000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [copied])
-
-  //? Set the token URL when the token is available.
-  useEffect(() => {
-    if (token) {
-      const url = `${window.location.origin}/guest/invite?token=${token}`
-      setTokenUrl(url)
-    }
-  }, [token])
-
-  //? Copy the token URL to the clipboard.
-  const copyTextHandler = () => {
-    if (tokenUrl) {
-      navigator.clipboard.writeText(tokenUrl)
-      setCopied(true)
-    }
-  }
-
-  const refreshTokenHandler = async () => {
+  const fetchToken = async () => {
     try {
+      setError(null)
       setIsLoading(true)
-      const res = await fetch(`/api/bookings/${bookingId}/refresh-token`, {
+
+      let url: string
+      if (isPreBooking) {
+        // For pre-booking invites, use a different endpoint
+        url = `/api/pre-booking-invites/${bookingId}/token`
+      } else {
+        // For confirmed bookings
+        url = `/api/bookings/${bookingId}/token`
+      }
+
+      const res = await fetch(url, {
         method: 'POST',
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
 
       if (!res.ok) {
-        throw new Error('Failed to refresh token')
+        throw new Error('Failed to generate invite link')
       }
 
       const data = await res.json()
-      setToken(data.token)
-    } catch (error) {
-      console.error('Error refreshing token:', error)
+      const baseUrl = window.location.origin
+      
+      if (isPreBooking) {
+        setInviteUrl(`${baseUrl}/join/guest?token=${data.token}&postId=${bookingId}`)
+      } else {
+        setInviteUrl(`${baseUrl}/guest/invite?token=${data.token}`)
+      }
+    } catch (err) {
+      console.error('Error fetching token:', err)
+      setError(err instanceof Error ? err.message : 'Failed to generate invite link')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (bookingId) {
+      fetchToken()
+    }
+  }, [bookingId])
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
     }
   }
 
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite Guests</DialogTitle>
+          <DialogTitle>Invite Guest</DialogTitle>
           <DialogDescription>
-            Share this link with your guests to invite them to the booking.
+            {isPreBooking 
+              ? 'Share this link to invite guests. They will be notified once the booking is complete.'
+              : 'Share this link with your guest to join the booking.'}
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-2">
-            <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
-            <span className="text-muted-foreground">Generating link...</span>
-          </div>
+        {error ? (
+          <div className="text-sm text-red-500">{error}</div>
+        ) : isLoading ? (
+          <div className="text-sm">Generating invite link...</div>
         ) : (
-          <div>
-            <div className="flex items-center gap-2">
-              <Input value={tokenUrl} readOnly className="flex-1" />
-              <Button size="sm" onClick={copyTextHandler}>
-                <CopyIcon className="size-4 mr-2" />
-                <span>{copied ? 'Copied!' : 'Copy'}</span>
-              </Button>
-            </div>
-            <div className="text-sm mt-1 px-2 h-max">
-              To make the current link invalid.{' '}
-              <Button variant="link" className="px-0 py-0 underline" onClick={refreshTokenHandler}>
-                Click here to generate a new link
-              </Button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Input
+              readOnly
+              value={inviteUrl}
+              className="w-full font-mono text-sm"
+            />
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={copyToClipboard}
+              className="shrink-0"
+            >
+              {copied ? (
+                <CheckIcon className="h-4 w-4 text-green-500" />
+              ) : (
+                <CopyIcon className="h-4 w-4" />
+              )}
+              <span className="sr-only">Copy invite URL</span>
+            </Button>
           </div>
         )}
-
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" className="mt-4">
-              Close
-            </Button>
-          </DialogClose>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-
-export default InviteUrlDialog

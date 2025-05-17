@@ -608,17 +608,23 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
       <div className="mb-8 max-w-screen-md">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Guests</h2>
-          {bookingId && (
+          <div className="flex items-center gap-2">
+            {!paymentSuccess && (
+              <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                Booking Pending
+              </div>
+            )}
             <InviteUrlDialog
-              bookingId={bookingId}
+              bookingId={postId || ''}
+              isPreBooking={!paymentSuccess}
               trigger={
-                <Button>
+                <Button variant={paymentSuccess ? "default" : "outline"}>
                   <PlusCircleIcon className="size-4 mr-2" />
                   <span>Invite</span>
                 </Button>
               }
             />
-          )}
+          </div>
         </div>
 
         <div className="mt-2 space-y-3">
@@ -629,7 +635,7 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
             </div>
             <div>
               <div>You</div>
-              <div className="font-medium text-sm">Primary Guest</div>
+              <div className="font-medium text-sm">Primary Guest • {paymentSuccess ? 'Booking Complete' : 'Booking in Progress'}</div>
             </div>
           </div>
 
@@ -646,19 +652,25 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
                 <div>
                   <div>{guest.name}</div>
                   <div className="font-medium text-sm">
-                    Guest • {guest.status === 'accepted' ? 'Confirmed' : 'Pending'}
+                    Guest • {!paymentSuccess ? 'Awaiting Booking' : guest.status === 'accepted' ? 'Confirmed' : 'Pending'}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <div className={`px-3 py-1 rounded-full text-xs ${
-                  guest.status === 'accepted' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
+                  !paymentSuccess 
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : guest.status === 'accepted'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-yellow-100 text-yellow-800'
                 }`}>
-                  {guest.status === 'accepted' ? 'Accepted' : 'Awaiting Response'}
+                  {!paymentSuccess 
+                    ? 'Booking in Progress'
+                    : guest.status === 'accepted' 
+                      ? 'Accepted' 
+                      : 'Awaiting Response'}
                 </div>
-                {bookingId && (
+                {postId && (
                   <Button
                     variant="secondary"
                     size="icon"
@@ -672,9 +684,11 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
             </div>
           ))}
 
-          {guests.length === 0 && !bookingId && (
+          {guests.length === 0 && (
             <div className="text-center py-6 text-muted-foreground">
-              Complete your booking to invite guests
+              {paymentSuccess 
+                ? 'Invite guests to join your stay'
+                : 'Invite guests now - they will be notified once booking is complete'}
             </div>
           )}
         </div>

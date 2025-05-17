@@ -14,22 +14,15 @@ import { formatDateTime } from '@/utilities/formatDateTime'
 
 import { CheckIcon, CircleAlert, Loader2Icon, AlertCircle, ArrowLeft, Check } from 'lucide-react'
 import Link from 'next/link'
-import { notFound, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
 
 type Props = {
   token: string
+  postId?: string
 }
 
-export default function InviteClientPage({ token }: Props) {
-  if (
-    typeof booking.post === 'string' ||
-    typeof booking.customer === 'string' ||
-    !('bookingId' in tokenPayload)
-  ) {
-    notFound()
-  }
-
+export default function InviteClientPage({ token, postId }: Props) {
   const router = useRouter()
   const [isAccepting, setIsAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,12 +33,16 @@ export default function InviteClientPage({ token }: Props) {
     setError(null)
 
     try {
-      const response = await fetch('/api/guest/accept-invite', {
+      const endpoint = postId 
+        ? '/api/pre-booking-invites/accept'
+        : '/api/guest/accept-invite'
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, postId }),
       })
 
       if (!response.ok) {
@@ -55,9 +52,13 @@ export default function InviteClientPage({ token }: Props) {
 
       setSuccess(true)
       
-      // Redirect to bookings page after a short delay
+      // Redirect after a short delay
       setTimeout(() => {
-        router.push('/bookings')
+        if (postId) {
+          router.push(`/join?token=${token}&postId=${postId}`)
+        } else {
+          router.push('/bookings')
+        }
       }, 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -98,7 +99,9 @@ export default function InviteClientPage({ token }: Props) {
             </div>
             <CardTitle className="text-2xl font-bold">Invite Accepted!</CardTitle>
             <CardDescription className="text-base">
-              You have successfully accepted the booking invite. Redirecting to your bookings...
+              {postId 
+                ? "You've been added to the booking. Redirecting to complete the booking process..."
+                : "You've been added to the booking. Redirecting to your bookings..."}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -112,7 +115,9 @@ export default function InviteClientPage({ token }: Props) {
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Accept Booking Invite</CardTitle>
           <CardDescription className="text-base">
-            You've been invited to join a booking. Click below to accept the invitation.
+            {postId 
+              ? "You've been invited to join a booking in progress. Click below to join and complete the booking together."
+              : "You've been invited to join a booking. Click below to accept the invitation."}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
