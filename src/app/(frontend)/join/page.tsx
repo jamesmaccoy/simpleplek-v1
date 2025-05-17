@@ -59,12 +59,13 @@ export default function JoinPage() {
       </Suspense>
     </>
   )
-} 
+}
 
 // New component to contain logic using useSearchParams
 function JoinInner() {
   const searchParams = useSearchParams()
-  const bookingTotal = searchParams.get('total') ?? 'N/A'
+  const baseRate = searchParams.get('baseRate') ?? 'N/A'
+  const discountedRate = searchParams.get('total') ?? 'N/A'
   const bookingDuration = searchParams.get('duration') ?? 'N/A'
 
   return (
@@ -72,12 +73,17 @@ function JoinInner() {
       {/* Booking Summary Header */}
       <div className="pt-12 pb-6">
         <div className="bg-muted p-6 rounded-lg border border-border mb-6 text-center">
-          <h2 className="text-3xl font-semibold mb-2">R{bookingTotal}</h2>
-          <p className="text-lg text-muted-foreground">Total for {bookingDuration} nights</p>
+          <div className="flex flex-col items-center gap-1">
+            <h2 className="text-3xl font-semibold">R{discountedRate}</h2>
+            {baseRate !== discountedRate && (
+              <p className="text-sm text-muted-foreground line-through">R{baseRate}</p>
+            )}
+            <p className="text-lg text-muted-foreground">Total for {bookingDuration} nights</p>
+          </div>
         </div>
       </div>
       {/* The actual premium content */}
-      <JoinClient bookingTotal={bookingTotal} bookingDuration={bookingDuration} />
+      <JoinClient bookingTotal={discountedRate} bookingDuration={bookingDuration} />
     </>
   )
 }

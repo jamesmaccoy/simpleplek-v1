@@ -28,6 +28,46 @@ interface StayDurationProps {
   id?: string
 }
 
+// Define package tiers with their thresholds and multipliers
+const packageTiers = [
+  {
+    minNights: 1,
+    maxNights: 1,
+    multiplier: 1.0,
+    label: "Standard rate"
+  },
+  {
+    minNights: 2,
+    maxNights: 3,
+    multiplier: 0.9,
+    label: "3+ nights (10% off)"
+  },
+  {
+    minNights: 4,
+    maxNights: 7,
+    multiplier: 0.8,
+    label: "Weekly (20% off)"
+  },
+  {
+    minNights: 8,
+    maxNights: 13,
+    multiplier: 0.7,
+    label: "2 weeks (30% off)"
+  },
+  {
+    minNights: 14,
+    maxNights: 28,
+    multiplier: 0.5,
+    label: "3 weeks (50% off)"
+  },
+  {
+    minNights: 29,
+    maxNights: 365,
+    multiplier: 0.7,
+    label: "Monthly (30% off)"
+  }
+]
+
 export const StayDurationComponent: React.FC<StayDurationProps> = ({ 
   defaultRate = 150,
   buttonLabel = "Request Availability",
@@ -47,15 +87,30 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
     return 5 // Default duration
   }
 
+  const getDiscountTier = (duration: number) => {
+    return packageTiers.find(tier => 
+      duration >= tier.minNights && duration <= tier.maxNights
+    ) || packageTiers[0] // Default to standard rate if no tier matches
+  }
+
+  const calculateDiscountedRate = () => {
+    const duration = calculateDuration()
+    const tier = getDiscountTier(duration)
+    return defaultRate * tier.multiplier
+  }
+
   const calculateTotalPrice = () => {
     const duration = calculateDuration()
-    return defaultRate * duration
+    return calculateDiscountedRate() * duration
   }
 
   const handleRequest = () => {
     const duration = calculateDuration().toString()
-    router.push(`/join?total=${defaultRate}&duration=${duration}&postId=${id || ''}`)
+    const discountedRate = calculateDiscountedRate()
+    router.push(`/join?baseRate=${defaultRate}&total=${discountedRate}&duration=${duration}&postId=${id || ''}`)
   }
+
+  const currentTier = getDiscountTier(calculateDuration())
 
   return (
     <div className="container mt-8 flex justify-center">
@@ -122,8 +177,16 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
 
           <div className="bg-muted p-4 rounded-lg space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Rate per night</span>
-              <span className="font-semibold">R{defaultRate.toFixed(2)}</span>
+              <div>
+                <span className="text-gray-600">Rate per night</span>
+                <p className="text-sm text-muted-foreground">{currentTier.label}</p>
+              </div>
+              <div className="text-right">
+                <span className="font-semibold">R{calculateDiscountedRate().toFixed(2)}</span>
+                {currentTier.multiplier < 1 && (
+                  <p className="text-sm text-muted-foreground line-through">R{defaultRate.toFixed(2)}</p>
+                )}
+              </div>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Number of nights</span>

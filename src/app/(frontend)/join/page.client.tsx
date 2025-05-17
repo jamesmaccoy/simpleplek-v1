@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { useRevenueCat } from "@/providers/RevenueCat"
 import { Purchases, type Package, type PurchasesError, ErrorCode, type Product } from "@revenuecat/purchases-js"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Loader2 } from 'lucide-react'
+import { Loader2, PlusCircleIcon, UserIcon, TrashIcon } from 'lucide-react'
 import { Switch } from "@/components/ui/switch"
+import InviteUrlDialog from '../bookings/[bookingId]/_components/invite-url-dialog'
 
 // Add type for RevenueCat error with code
 interface RevenueCatError extends Error {
@@ -23,12 +24,19 @@ interface RevenueCatProduct extends Product {
   currencyCode?: string;
 }
 
+// Add types for guests
+interface Guest {
+  id: string;
+  name: string;
+  status: 'pending' | 'accepted';
+}
+
 export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/A' }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isInitialized } = useRevenueCat()
   
-  const [guests, setGuests] = useState<User[]>([])
+  const [guests, setGuests] = useState<Guest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -52,6 +60,14 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
   const [selectedDuration, setSelectedDuration] = useState<number>(1)
   const [isWineSelected, setIsWineSelected] = useState(false)
   const [packagePrice, setPackagePrice] = useState<number | null>(null)
+  const [startDate, setStartDate] = useState<Date>(new Date())
+  const [endDate, setEndDate] = useState<Date>(() => {
+    const date = new Date()
+    date.setDate(date.getDate() + 1)
+    return date
+  })
+
+  const [bookingId, setBookingId] = useState<string>('')
 
   // Define package tiers with their thresholds and multipliers
   const packageTiers = [
@@ -285,8 +301,8 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
         console.log("Per Night packages:", perNightOffering.availablePackages.map(pkg => ({
           identifier: pkg.webBillingProduct?.identifier,
           product: pkg.webBillingProduct,
-          priceString: pkg.webBillingProduct?.priceString,
-          price: pkg.webBillingProduct?.price
+          priceString: (pkg.webBillingProduct as RevenueCatProduct)?.priceString,
+          price: (pkg.webBillingProduct as RevenueCatProduct)?.price
         })))
         setOfferings(perNightOffering.availablePackages)
       } else {
@@ -316,8 +332,8 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
       packageId: selectedPackage,
       revenueCatId: selectedPackageDetails.revenueCatId,
       foundPackage: packageToUse?.webBillingProduct?.identifier,
-      priceString: packageToUse?.webBillingProduct?.priceString,
-      price: packageToUse?.webBillingProduct?.price,
+      priceString: (packageToUse?.webBillingProduct as RevenueCatProduct)?.priceString,
+      price: (packageToUse?.webBillingProduct as RevenueCatProduct)?.price,
       bookingTotal
     })
 
@@ -358,6 +374,13 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
       setPackagePrice(calculatedPrice)
     }
   }, [selectedPackage, offerings, bookingTotal])
+
+  // Update end date when duration changes
+  useEffect(() => {
+    const newEndDate = new Date(startDate)
+    newEndDate.setDate(startDate.getDate() + selectedDuration)
+    setEndDate(newEndDate)
+  }, [selectedDuration, startDate])
 
   const calculateTotalPrice = () => {
     if (!packagePrice || !selectedDuration) return null
@@ -465,8 +488,14 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
           throw new Error(errorData.error || 'Failed to save booking')
         }
         
+        const bookingResponse = await response.json()
+        setBookingId(bookingResponse.id)
+        
         // Set success state
         setPaymentSuccess(true)
+        
+        // Fetch initial guests
+        fetchGuests(bookingResponse.id)
         
         // Redirect to confirmation page after a short delay
         setTimeout(() => {
@@ -512,6 +541,47 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
     }
   }
 
+  const fetchGuests = async (id: string) => {
+    try {
+      const response = await fetch(`/api/bookings/${id}/guests`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch guests')
+      }
+      const data = await response.json()
+      setGuests(data.guests || [])
+    } catch (err) {
+      console.error('Error fetching guests:', err)
+    }
+  }
+
+  // Fetch guests whenever bookingId changes
+  useEffect(() => {
+    if (bookingId) {
+      fetchGuests(bookingId)
+    }
+  }, [bookingId])
+
+  const removeGuestHandler = async (guestId: string) => {
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/guests/${guestId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to remove guest')
+      }
+
+      // Update the guests list by filtering out the removed guest
+      setGuests(guests.filter(guest => guest.id !== guestId))
+    } catch (error) {
+      console.error('Error removing guest:', error)
+    }
+  }
+
   if (loading || loadingOfferings) {
     return (
       <div className="container py-10">
@@ -533,6 +603,82 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
   return (
     <div className="container py-10">
       <h1 className="text-4xl font-bold tracking-tighter mb-8">Start your curated stay</h1>
+
+      {/* Guest Management Section */}
+      <div className="mb-8 max-w-screen-md">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">Guests</h2>
+          {bookingId && (
+            <InviteUrlDialog
+              bookingId={bookingId}
+              trigger={
+                <Button>
+                  <PlusCircleIcon className="size-4 mr-2" />
+                  <span>Invite</span>
+                </Button>
+              }
+            />
+          )}
+        </div>
+
+        <div className="mt-2 space-y-3">
+          {/* Primary Guest */}
+          <div className="shadow-sm p-2 border border-border rounded-lg flex items-center gap-2">
+            <div className="p-2 border border-border rounded-full">
+              <UserIcon className="size-6" />
+            </div>
+            <div>
+              <div>You</div>
+              <div className="font-medium text-sm">Primary Guest</div>
+            </div>
+          </div>
+
+          {/* Other Guests */}
+          {guests.map((guest) => (
+            <div
+              key={guest.id}
+              className="shadow-sm p-2 border border-border rounded-lg flex items-center gap-2 justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <div className="p-2 border border-border rounded-full">
+                  <UserIcon className="size-6" />
+                </div>
+                <div>
+                  <div>{guest.name}</div>
+                  <div className="font-medium text-sm">
+                    Guest • {guest.status === 'accepted' ? 'Confirmed' : 'Pending'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`px-3 py-1 rounded-full text-xs ${
+                  guest.status === 'accepted' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {guest.status === 'accepted' ? 'Accepted' : 'Awaiting Response'}
+                </div>
+                {bookingId && (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => removeGuestHandler(guest.id)}
+                  >
+                    <TrashIcon className="size-4" />
+                    <span className="sr-only">Remove Guest</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {guests.length === 0 && !bookingId && (
+            <div className="text-center py-6 text-muted-foreground">
+              Complete your booking to invite guests
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Payment Success Message */}
       {paymentSuccess && (
@@ -616,6 +762,18 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
           </span>
         </div>
         <div className="flex justify-between items-center mb-4">
+          <span className="text-muted-foreground">Check-in:</span>
+          <span className="font-medium">
+            {startDate.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-muted-foreground">Check-out:</span>
+          <span className="font-medium">
+            {endDate.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-4">
           <span className="text-muted-foreground">Rate per night:</span>
           <span className="font-medium">
             {formatPrice(packagePrice)}
@@ -635,7 +793,7 @@ export default function JoinClient({ bookingTotal = 'N/A', bookingDuration = 'N/
         {/* Complete Booking Button */}
         <Button
           onClick={handleBooking}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-6"
           disabled={paymentLoading || paymentSuccess || !postId || !selectedPackage}
         >
           {paymentLoading ? (
