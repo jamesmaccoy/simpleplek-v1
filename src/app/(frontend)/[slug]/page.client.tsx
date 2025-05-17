@@ -13,9 +13,10 @@ import { PayloadRedirects } from '@/components/PayloadRedirects'
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, PlusCircleIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { InviteUrlDialog } from '@/components/InviteUrlDialog'
 
 interface PageClientProps {
   page: PageType | null
@@ -98,6 +99,24 @@ const PageClient: React.FC<PageClientProps> = ({ page, draft, url }) => {
         <RenderBlocks blocks={layout} />
         
         <div className="container mt-8 flex flex-col items-center space-y-4">
+          {/* Guest Management Section */}
+          <div className="w-full max-w-md mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Guests</h2>
+              {currentUser && (
+                <InviteUrlDialog
+                  bookingId={page.id}
+                  trigger={
+                    <Button>
+                      <PlusCircleIcon className="size-4 mr-2" />
+                      <span>Invite</span>
+                    </Button>
+                  }
+                />
+              )}
+            </div>
+          </div>
+
           {/* Date Picker for Stay Length */}
           <div className="flex flex-col space-y-2 w-full max-w-md">
             <label className="text-gray-700 font-medium">Stay Length</label>
@@ -186,6 +205,7 @@ const PageClient: React.FC<PageClientProps> = ({ page, draft, url }) => {
             Request Availability
           </button>
         </div>
+        
       </article>
     )
   }
