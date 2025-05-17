@@ -12,18 +12,16 @@ import {
 import { Booking } from '@/payload-types'
 import { formatDateTime } from '@/utilities/formatDateTime'
 
-import { CheckIcon, CircleAlert, Loader2Icon } from 'lucide-react'
+import { CheckIcon, CircleAlert, Loader2Icon, AlertCircle, ArrowLeft, Check } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, useRouter } from 'next/navigation'
-import React from 'react'
+import React, { useState } from 'react'
 
 type Props = {
-  booking: Pick<Booking, 'post' | 'fromDate' | 'createdAt' | 'customer'>
-  tokenPayload: Record<string, string>
   token: string
 }
 
-export default function InviteClientPage({ booking, tokenPayload, token }: Props) {
+export default function InviteClientPage({ token }: Props) {
   if (
     typeof booking.post === 'string' ||
     typeof booking.customer === 'string' ||
@@ -33,85 +31,103 @@ export default function InviteClientPage({ booking, tokenPayload, token }: Props
   }
 
   const router = useRouter()
+  const [isAccepting, setIsAccepting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
+  const handleAcceptInvite = async () => {
+    setIsAccepting(true)
+    setError(null)
 
-  const handleInviteAccept = async () => {
     try {
-      setIsLoading(true)
-      const res = await fetch(`/api/bookings/${tokenPayload.bookingId}/accept-invite/${token}`, {
+      const response = await fetch('/api/guest/accept-invite', {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ token }),
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        console.error('Error accepting invite:', res.statusText)
-        setError(data.message || 'Unknown error')
-        return
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to accept invite')
       }
 
-      router.push(`/bookings/${tokenPayload.bookingId}`)
+      setSuccess(true)
+      
+      // Redirect to bookings page after a short delay
+      setTimeout(() => {
+        router.push('/bookings')
+      }, 2000)
     } catch (err) {
-      console.error('Error accepting invite:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
-      setIsLoading(false)
+      setIsAccepting(false)
     }
   }
 
   if (error) {
     return (
-      <div className="border-2 flex items-center gap-6 mt-10 flex-col border-red-500 bg-red-100 max-w-[450px] w-full mx-auto p-6 rounded-xl ">
-        <div>
-          <CircleAlert className="size-8" />
-        </div>
-        <div className="text-center">
-          <h2 className="text-lg font-medium tracking-tight">Something went wrong</h2>
-          <p className="tracking-wide ">{error}</p>
-        </div>
-        <Button asChild variant="default" className="w-full">
-          <Link href={'/'}>Return Home</Link>
-        </Button>
+      <div className="container flex min-h-[80vh] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <AlertCircle className="h-10 w-10 text-red-500" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Error</CardTitle>
+            <CardDescription className="text-base">{error}</CardDescription>
+          </CardHeader>
+          <CardFooter className="flex flex-col space-y-3 pt-2">
+            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Return Home
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+
+  if (success) {
+    return (
+      <div className="container flex min-h-[80vh] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-50">
+              <Check className="h-10 w-10 text-green-500" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Invite Accepted!</CardTitle>
+            <CardDescription className="text-base">
+              You have successfully accepted the booking invite. Redirecting to your bookings...
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-screen-md my-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Join <strong>{booking.post.title}</strong> as a guest
-          </CardTitle>
-          <CardDescription>
-            You have been invited by <strong>{booking.customer?.name}</strong> to join them on this
-            booking.
+    <div className="container flex min-h-[80vh] items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">Accept Booking Invite</CardTitle>
+          <CardDescription className="text-base">
+            You've been invited to join a booking. Click below to accept the invitation.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-start gap-10">
-            <p className="text-lg font-medium">Date Booked: {formatDateTime(booking.createdAt)}</p>
-            <p className="text-lg font-medium">Arrival Date: {formatDateTime(booking.fromDate)}</p>
-          </div>
+        <CardContent className="pt-6">
+          <Button
+            className="w-full"
+            onClick={handleAcceptInvite}
+            disabled={isAccepting}
+          >
+            {isAccepting ? 'Accepting...' : 'Accept Invite'}
+          </Button>
         </CardContent>
-        <CardFooter>
-          <Button onClick={handleInviteAccept} disabled={isLoading}>
-            {!isLoading ? (
-              <>
-                <CheckIcon className="size-4 mr-2" />
-                Accept Invitation
-              </>
-            ) : (
-              <>
-                <Loader2Icon className="animate-spin mr-2" />
-                <span>Accepting...</span>
-              </>
-            )}
+        <CardFooter className="flex flex-col space-y-3 pt-2">
+          <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return Home
           </Button>
         </CardFooter>
       </Card>
