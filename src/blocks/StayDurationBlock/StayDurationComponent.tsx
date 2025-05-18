@@ -1,20 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { format, addDays } from "date-fns"
+import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { useRouter } from "next/navigation"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card"
 import {
   Popover,
   PopoverContent,
@@ -74,19 +66,21 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
   id
 }) => {
   const router = useRouter()
-  const today = new Date()
-  const [startDate, setStartDate] = useState<Date | null>(today)
-  const [endDate, setEndDate] = useState<Date | null>(addDays(today, 5))
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
 
-  const calculateDuration = () => {
+  const handleRequest = () => {
+    // Calculate duration from selected dates
+    let duration = '5' // Default duration
     if (startDate && endDate) {
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      return diffDays > 0 ? diffDays : 5
+      if (diffDays > 0) {
+        duration = diffDays.toString()
+      }
     }
-    return 5 // Default duration
-  }
 
+<<<<<<< HEAD
   const getDiscountTier = (duration: number) => {
     return packageTiers.find(tier => 
       duration >= tier.minNights && duration <= tier.maxNights
@@ -108,73 +102,72 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
     const duration = calculateDuration().toString()
     const discountedRate = calculateDiscountedRate()
     router.push(`/join?baseRate=${defaultRate}&total=${discountedRate}&duration=${duration}&postId=${id || ''}`)
+=======
+    // Navigate to join page with parameters
+    router.push(`/join?total=${defaultRate}&duration=${duration}&postId=${id || ''}`)
+>>>>>>> parent of 31b5b63 (Update StayDurationComponent.tsx)
   }
 
   const currentTier = getDiscountTier(calculateDuration())
 
   return (
-    <div className="container mt-8 flex justify-center">
-      <Card className="w-full max-w-xl">
-        <CardHeader>
-          <CardTitle>Book Your Stay</CardTitle>
-          <CardDescription>Select your dates and review pricing</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <label className="text-gray-700 font-medium">Stay Length</label>
-            <div className="flex space-x-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate || undefined}
-                    onSelect={(date) => setStartDate(date || null)}
-                    initialFocus
-                    disabled={(date) => date < new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
+    <div className="container mt-8 flex flex-col items-center space-y-4">
+      <div className="flex flex-col space-y-2 w-full max-w-md">
+        <label className="text-gray-700 font-medium">Stay Length</label>
+        <div className="flex space-x-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !startDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={startDate || undefined}
+                onSelect={(date) => setStartDate(date || null)}
+                initialFocus
+                disabled={(date) => date < new Date()}
+              />
+            </PopoverContent>
+          </Popover>
 
-              <span className="text-gray-500 self-center">to</span>
+          <span className="text-gray-500 self-center">to</span>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={endDate || undefined}
-                    onSelect={(date) => setEndDate(date || null)}
-                    initialFocus
-                    disabled={(date) => !startDate || date < startDate}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !endDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={endDate || undefined}
+                onSelect={(date) => setEndDate(date || null)}
+                initialFocus
+                disabled={(date) => !startDate || date < startDate}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
 
+<<<<<<< HEAD
           <div className="bg-muted p-4 rounded-lg space-y-3">
             <div className="flex justify-between items-center">
               <div>
@@ -209,6 +202,14 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
           </Button>
         </CardFooter>
       </Card>
+=======
+      <Button 
+        className="primary-btn bg-black text-white"
+        onClick={handleRequest}
+      >
+        {buttonLabel}
+      </Button>
+>>>>>>> parent of 31b5b63 (Update StayDurationComponent.tsx)
     </div>
   )
 } 
