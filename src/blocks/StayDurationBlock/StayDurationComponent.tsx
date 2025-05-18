@@ -75,35 +75,18 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
     if (startDate && endDate) {
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      if (diffDays > 0) {
-        duration = diffDays.toString()
-      }
+      return diffDays > 0 ? diffDays : 5
     }
-
-<<<<<<< HEAD
-  const getDiscountTier = (duration: number) => {
-    return packageTiers.find(tier => 
-      duration >= tier.minNights && duration <= tier.maxNights
-    ) || packageTiers[0] // Default to standard rate if no tier matches
-  }
-
-  const calculateDiscountedRate = () => {
-    const duration = calculateDuration()
-    const tier = getDiscountTier(duration)
-    return defaultRate * tier.multiplier
+    return 5 // Default duration
   }
 
   const calculateTotalPrice = () => {
     const duration = calculateDuration()
-    return calculateDiscountedRate() * duration
+    return defaultRate * duration
   }
 
   const handleRequest = () => {
     const duration = calculateDuration().toString()
-    const discountedRate = calculateDiscountedRate()
-    router.push(`/join?baseRate=${defaultRate}&total=${discountedRate}&duration=${duration}&postId=${id || ''}`)
-=======
-    // Navigate to join page with parameters
     router.push(`/join?total=${defaultRate}&duration=${duration}&postId=${id || ''}`)
 >>>>>>> parent of 31b5b63 (Update StayDurationComponent.tsx)
   }
@@ -167,19 +150,10 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
         </div>
       </div>
 
-<<<<<<< HEAD
           <div className="bg-muted p-4 rounded-lg space-y-3">
             <div className="flex justify-between items-center">
-              <div>
-                <span className="text-gray-600">Rate per night</span>
-                <p className="text-sm text-muted-foreground">{currentTier.label}</p>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold">R{calculateDiscountedRate().toFixed(2)}</span>
-                {currentTier.multiplier < 1 && (
-                  <p className="text-sm text-muted-foreground line-through">R{defaultRate.toFixed(2)}</p>
-                )}
-              </div>
+              <span className="text-gray-600">Rate per night</span>
+              <span className="font-semibold">R{defaultRate.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Number of nights</span>
@@ -202,14 +176,6 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
           </Button>
         </CardFooter>
       </Card>
-=======
-      <Button 
-        className="primary-btn bg-black text-white"
-        onClick={handleRequest}
-      >
-        {buttonLabel}
-      </Button>
->>>>>>> parent of 31b5b63 (Update StayDurationComponent.tsx)
     </div>
   )
 } 
