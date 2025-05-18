@@ -75,18 +75,12 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
     if (startDate && endDate) {
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      return diffDays > 0 ? diffDays : 5
+      if (diffDays > 0) {
+        duration = diffDays.toString()
+      }
     }
-    return 5 // Default duration
-  }
 
-  const calculateTotalPrice = () => {
-    const duration = calculateDuration()
-    return defaultRate * duration
-  }
-
-  const handleRequest = () => {
-    const duration = calculateDuration().toString()
+    // Navigate to join page with parameters
     router.push(`/join?total=${defaultRate}&duration=${duration}&postId=${id || ''}`)
 >>>>>>> parent of 31b5b63 (Update StayDurationComponent.tsx)
   }
@@ -150,32 +144,12 @@ export const StayDurationComponent: React.FC<StayDurationProps> = ({
         </div>
       </div>
 
-          <div className="bg-muted p-4 rounded-lg space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Rate per night</span>
-              <span className="font-semibold">R{defaultRate.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Number of nights</span>
-              <span className="font-semibold">{calculateDuration()} nights</span>
-            </div>
-            <div className="border-t border-border pt-3">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-medium">Total Price</span>
-                <span className="text-lg font-bold">R{calculateTotalPrice().toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            className="w-full bg-black text-white"
-            onClick={handleRequest}
-          >
-            {buttonLabel}
-          </Button>
-        </CardFooter>
-      </Card>
+      <Button 
+        className="primary-btn bg-black text-white"
+        onClick={handleRequest}
+      >
+        {buttonLabel}
+      </Button>
     </div>
   )
 } 
